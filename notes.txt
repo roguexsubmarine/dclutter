@@ -1,0 +1,43 @@
+useful -
+    file command (file *)
+
+common file types (in description) -with priority (to avoid collision)
+key descriptors !
+    - directory (keep them in same directory)
+    - compressed (all zips / tars / etc)
+    - image (jpg / jpeg / png / svg)
+    - text / ASCII  (all code goes here)
+    - document (pdf / epub)
+    
+    - bin / src (all sorts of binaries and tar files)
+    - audio (for mp4)
+    - media (for video and rest - should come before iso images)
+    - iso (ISO / boot)
+    - microsoft (for that shit)
+
+to_dos : 
+    - recent folder 
+        - to have recent (downloads) (eg. last hour)
+        - if clear the item if it is older than that
+        - we need to make this one first (and copy the items)
+        - cuz later other items will be moved to their categories
+ 
+    
+fun things
+    - file --extension <file>   :   spits out extensions for most
+    - file -b <file>            :   keeps is brief (without name prefix)
+
+
+anamaloies
+    - .html
+        -two descriptors (HTML document and ASCII text) 
+        - we wish to categorize in text (so ASCII)
+
+    - .mkv
+        - matroska data
+
+    - .mp4
+        - identified as ISO filetype
+
+
+
