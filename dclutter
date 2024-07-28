@@ -1,10 +1,13 @@
 #!/bin/bash  
 # Bash script  
 
+LOG_FILE="$HOME/.dclutter.log"
+
 log(){
     local FILE=$1
     local TYPE=$2
     local NUM=$3
+    local LOG_FILE=$4
 
     mkdir -p "$TYPE"
     mv "$FILE" "$TYPE"
@@ -12,17 +15,85 @@ log(){
     echo -e "$NUM\t$TYPE\t:$FILE"
     
     #create LOG if not
-    touch LOG_FILE
-    echo -e "$NUM\t$FILE\t$(pwd)/\t$(pwd)/$TYPE/" >> LOG_FILE
+    touch "$LOG_FILE"
+    echo -e "$NUM\t$FILE\t$(pwd)\t$(pwd)/$TYPE" >> "$LOG_FILE"
 
 }
 
+
+undo_op(){
+    local LOG_FILE=$1
+
+    local NUM=$(tail -n 1 "$LOG_FILE" | awk '{print $1}')
+    echo -e "Reverting last $NUM operations."
+    
+    for ((i = NUM; i > 0; i--));
+    do
+        LAST=$(tail -n 1 "$LOG_FILE")
+        
+        #check if empty string
+        if [[ -z "$LAST" ]];
+        then
+            echo "done."
+            break
+        else
+            FILE=$(echo "$LAST" | awk '{print $2}')
+            OLD_PATH=$(echo "$LAST" | awk '{print $3}')
+            CURR_PATH=$(echo "$LAST" | awk '{print $4}')
+            
+            if [[ -e "$CURR_PATH/$FILE" ]];
+            then
+                mv $CURR_PATH/$FILE $OLD_PATH/
+                echo -e "recovering $FILE from $CURR_PATH"
+            fi
+            #deleting last line from log
+            sed -i '$d' "$LOG_FILE"
+        fi
+    done
+    
+    
+}
+
+#function to display usage
+usage(){
+    echo -e "\nUsage: $0 [-i] [-c] [-r days] [-d] [-h] [-x] [-w]\n"
+    echo -e "\tOption -i \t:(segregate images)"
+    echo -e "\tOption -c \t:(clear empty directories)"
+    echo -e "\tOption -r \t:(update recent directroy)"
+    echo -e "\tOption -h \t:(display help)"
+    echo -e "\tOption -u \t:(undo last operation)"
+    echo -e "\tOption -x \t:(clear log)"
+    echo -e "\tOption -w \t:(remove whitespace from file names)"
+
+}
+
+remove_whitespace(){
+    echo -e "Replacing Whitespace."
+    echo $(pwd)
+
+    for FILE in $(pwd)/*;
+    do
+        if [[ -e "$FILE" ]];
+        then
+            
+            #new name with underscore
+            NEW_FILE="${FILE// /_}"
+            if [[ "$FILE" != "$NEW_FILE" ]];
+            then
+                mv "$FILE" "$NEW_FILE"
+                echo -e "Renamed: $FILE"
+            fi
+        fi
+    done
+}
+
+
 image_sep(){
-    echo "D-cluttering images"
+    echo "Dcluttering images."
     echo $(pwd)
 
     #create LOG_FILE if not
-    touch LOG_FILE
+    local LOG_FILE=$1
     local line_num=1
 
     for FILE in $(pwd)/*;
@@ -41,53 +112,54 @@ image_sep(){
                 #also include .xcf files (used by gimp)
                 if file -b "$file" | grep -q 'JPEG';
                 then
-                    log "$file" "JPEG" "$line_num"
+                    log "$file" "JPEG" "$line_num" "$LOG_FILE"
                     ((line_num++))
 
                 #PNG (Portable Network Graphics)
                 elif file -b "$file" | grep -q 'PNG';
                 then
-                    log "$file" "PNG" "$line_num"
+                    log "$file" "PNG" "$line_num" "$LOG_FILE"
                     ((line_num++))
 
                 #SVG (Scalable Vector Graphics)
                 elif file -b "$file" | grep -q 'SVG';
                 then
-                    log "$file" "SVG" "$line_num"
+                    log "$file" "SVG" "$line_num"  "$LOG_FILE"
                     ((line_num++))
                 
                 #.ai
                 elif file -b "$file" | grep -q 'Adobe Photoshop';
                 then
-                    log "$file" "Adobe" "$line_num"
+                    log "$file" "Adobe" "$line_num"  "$LOG_FILE"
                     ((line_num++))
                 
                 #TIFF (Tagged Image File Format)
                 elif file -b "$file" | grep -q 'TIFF';
                 then
-                    log "$file" "TIFF" "$line_num"
+                    log "$file" "TIFF" "$line_num"  "$LOG_FILE"
+
                     ((line_num++))
                 
                 #HEIF (High Efficiency Image File)
                 elif file -b "$file" | grep -q 'HEIF';
                 then
-                    log "$file" "HEIF" "$line_num"
+                    log "$file" "HEIF" "$line_num"  "$LOG_FILE"
                     ((line_num++))
 
                 elif file -b "$file" | grep -q 'Web/P';
                 then
-                    log "$file" "WEBP" "$line_num"
+                    log "$file" "WEBP" "$line_num"  "$LOG_FILE"
                     ((line_num++))
                 
                 #GIF (Graphics Interchange Format)
                 elif file -b "$file" | grep -q 'GIF';
                 then
-                    log "$file" "GIF" "$line_num"
+                    log "$file" "GIF" "$line_num" "$LOG_FILE"
                     ((line_num++))
 
                 elif file -b "$file" | grep -q 'Netpbm';
                 then
-                    log "$file" "PPM" "$line_num"
+                    log "$file" "PPM" "$line_num" "$LOG_FILE"
                     ((line_num++))
 
                 fi
@@ -95,12 +167,12 @@ image_sep(){
 
             elif file -b "$file" | grep -q 'PostScript';
             then
-                log "$file" "EPS" "$line_num"
+                log "$file" "EPS" "$line_num" "$LOG_FILE"
                 ((line_num++))
             
             elif file -b "$file" | grep -q 'bitmap';
             then
-                log "$file" "BITMAP" "$line_num"
+                log "$file" "BITMAP" "$line_num" "$LOG_FILE"
                 ((line_num++))
             fi
 
@@ -111,7 +183,7 @@ image_sep(){
 
 
 remove_empty(){
-    echo "D-eleting empty directories"
+    echo "Removing empty directories"
     echo $(pwd)
 
     local NUM=1
@@ -122,7 +194,7 @@ remove_empty(){
         then
             if [ $(ls -A "$file" | wc -l)  -eq 0 ];
             then
-                echo -e "$NUM\tDeleting\t:$file"
+                echo -e "$NUM\tRemoving\t:$file"
                 rmdir "$file"
                 ((NUM++))
             fi
@@ -134,9 +206,10 @@ remove_empty(){
 dclutter_main(){
     echo "D-cluttering current working directory..."
     echo $(pwd)
+    
 
     #create LOG_FILE if not
-    touch LOG_FILE
+    touch "$LOG_FILE"
     local line_num=1
 
     for FILE in "$(pwd)"/*;
@@ -162,62 +235,62 @@ dclutter_main(){
             #check for images
             if file -b "$file" | grep -q 'image\|Image\|PostScript\|bitmap';
             then
-                log "$file" "images" "$line_num"
+                log "$file" "images" "$line_num" "$LOG_FILE"
                 ((line_num++))
           
             #check for documents
             elif file -b "$file" | grep -q 'document';
             then
-                log "$file" "documents" "$line_num"
+                log "$file" "documents" "$line_num" "$LOG_FILE"
                 ((line_num++))
         
             #check for compression
             elif file -b "$file" | grep -q 'compress';
             then
-                log "$file" "compressed" "$line_num"
+                log "$file" "compressed" "$line_num" "$LOG_FILE"
                 ((line_num++))
 
             #check for ASCII/text/code
             elif file -b "$file" | grep -q 'ASCII\|text\|JSON';
             then
-                log "$file" "codext" "$line_num"
+                log "$file" "codext" "$line_num" "$LOG_FILE"
                 ((line_num++))
                  mkdir -p codext
      
             #check for binaries or src code
             elif file -b "$file" | grep -q 'bin\|src';
             then
-                log "$file" "src_bin" "$line_num"
+                log "$file" "src_bin" "$line_num" "$LOG_FILE"
                 ((line_num++))
            
             #check for audio
             elif file -b "$file" | grep -q 'Audio';
             then
-                log "$file" "audio" "$line_num"
+                log "$file" "audio" "$line_num" "$LOG_FILE"
                 ((line_num++))
 
             #check for videos (no choice fo this one... check extensions)
             elif [[ "$file" == *.mp4 || "$file" == *.mkv ]];
             then
-                log "$file" "video" "$line_num"
+                log "$file" "video" "$line_num" "$LOG_FILE"
                 ((line_num++))
 
             #check for fonts
             elif file -b "$file" | grep -q "Font";
             then
-                log "$file" "font" "$line_num"
+                log "$file" "font" "$line_num" "$LOG_FILE"
                 ((line_num++))
  
             #check for iso images
             elif file -b "$file" | grep -q 'bootable';
             then
-                log "$file" "bootables" "$line_num"
+                log "$file" "bootables" "$line_num" "$LOG_FILE"
                 ((line_num++))
 
             #check for microsoft files
             elif file -b "$file" | grep -q 'Microsoft';
             then
-                log "$file" "microsoft" "$line_num"
+                log "$file" "microsoft" "$line_num" "$LOG_FILE"
                 ((line_num++))
 
             fi
@@ -231,7 +304,8 @@ dclutter_main(){
 # if no options provided
 if [ $# -eq 0 ];
 then
-    dclutter_main
+    remove_whitespace
+    dclutter_main "$LOG_FILE"
 else
 
     #check for options
@@ -241,7 +315,19 @@ else
         exit 0
     elif [ "$1" == '-i' ];
     then
-        image_sep
+        remove_whitespace
+        image_sep "$LOG_FILE"
+        exit 0
+    elif [ "$1" == '-w' ];
+    then
+        remove_whitespace
+        exit 0
+    elif [ "$1" == '-u' ];
+    then
+        undo_op "$LOG_FILE"
+        exit 0
+    else
+        usage
         exit 0
     fi
 

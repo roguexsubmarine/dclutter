@@ -38,10 +38,10 @@ options:
         - to display options on top
         - display help and usage information
         
-    -d
+    -d`dump
         - dump (revese the declutter)
         - check if any directories and pour their contents in current directory (will need dfs for this one)
-        - use ls -R for this (does exactly is written above)
+        - use ls -R for this (does exactly what is written above)
 
 
    
