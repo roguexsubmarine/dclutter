@@ -40,7 +40,15 @@ undo_op(){
             FILE=$(echo "$LAST" | awk '{print $2}')
             OLD_PATH=$(echo "$LAST" | awk '{print $3}')
             CURR_PATH=$(echo "$LAST" | awk '{print $4}')
-            
+
+
+            if [[ -e "$CURR_PATH/$FILE" && -e "$OLD_PATH/$FILE" ]];
+            then
+                echo "Conflict detected: $FILE exists in both $CURR_PATH and $OLD_PATH. Skipping."
+                sed -i '$d' "$LOG_FILE"
+                continue
+            fi
+
             if [[ -e "$CURR_PATH/$FILE" ]];
             then
                 mv $CURR_PATH/$FILE $OLD_PATH/
@@ -51,20 +59,19 @@ undo_op(){
         fi
     done
     
-    
 }
 
 #function to display usage
 usage(){
-    echo -e "\nUsage: $0 [-i] [-c] [-r days] [-d] [-h] [-x] [-w]\n"
+    echo -e "\nUsage: $0 [-i] [-c] [-r days] [-h] [-x] [-w] [-d]\n"
     echo -e "\tOption -i \t:(segregate images)"
     echo -e "\tOption -c \t:(clear empty directories)"
-    echo -e "\tOption -r \t:(update recent directroy)"
+    echo -e "\tOption -r [days]:(recent (age) filter)"
     echo -e "\tOption -h \t:(display help)"
     echo -e "\tOption -u \t:(undo last operation)"
     echo -e "\tOption -x \t:(clear log)"
     echo -e "\tOption -w \t:(remove whitespace from file names)"
-
+    echo -e "\tOption -d \t:(directory dump - recursive dump of all files present in this directory)"
 }
 
 remove_whitespace(){
@@ -209,7 +216,9 @@ dclutter_main(){
     
 
     #create LOG_FILE if not
+    local LOG_FILE=$1
     touch "$LOG_FILE"
+
     local line_num=1
 
     for FILE in "$(pwd)"/*;
@@ -222,8 +231,8 @@ dclutter_main(){
 
         
             #RECENT
-            #check if file is modified within last hour
-            if [ "$(find "$file" -mmin -60 2>/dev/null)" ];
+            #check if file is modified within a day
+            if [ "$(find "$file" -type f -mtime -1 2>/dev/null)" ];
             then
                 mkdir -p recent
                 cp "$file" recent
@@ -231,7 +240,7 @@ dclutter_main(){
             fi
 
             #CATEGORIZING
-       
+
             #check for images
             if file -b "$file" | grep -q 'image\|Image\|PostScript\|bitmap';
             then
@@ -270,7 +279,7 @@ dclutter_main(){
                 ((line_num++))
 
             #check for videos (no choice fo this one... check extensions)
-            elif [[ "$file" == *.mp4 || "$file" == *.mkv ]];
+            elif [[ "$file" == *.mp4 || "$file" == *.mkv || "$file" == *.webm ]];
             then
                 log "$file" "video" "$line_num" "$LOG_FILE"
                 ((line_num++))
@@ -297,6 +306,49 @@ dclutter_main(){
         fi
     done
 }
+
+clean_log(){
+    local LOG=$1
+
+    if [[ -e "$LOG" ]];
+    then
+        rm "$LOG"
+        touch "$LOG"
+        echo "Clean log :)"
+    fi
+}
+
+recent_sort() {
+    local LOG_FILE=$1
+    local AGE=1
+
+    if [ $# -eq 2 ];
+    then
+        AGE=$2
+    fi
+    
+    echo "Sorting : $(pwd)"
+
+    local line_num=1
+    for FILE in "$(pwd)"/*; do
+
+        local file=$(basename "$FILE")
+        if [[ -f "$FILE" ]];
+        then
+            # Check if file is modified within the last specified number of days
+            if [ "$(find "$file" -type f -mtime -$AGE 2>/dev/null)" ];
+            then
+                log "$file" "under_$AGE" "$line_num"  "$LOG_FILE"
+                ((line_num++))
+            else
+                log "$file" "older_$AGE" "$line_num"  "$LOG_FILE"
+                ((line_num++))
+            fi
+        fi
+    done
+    echo "Age filtered."
+}
+
 
 
 
@@ -325,6 +377,20 @@ else
     elif [ "$1" == '-u' ];
     then
         undo_op "$LOG_FILE"
+        exit 0
+    elif [ "$1" == '-x' ];
+    then
+        clean_log "$LOG_FILE"
+        exit 0
+    elif [ "$1" == '-r' ];
+    then
+        remove_whitespace
+        if [ $# -gt 1 ];
+        then
+            recent_sort "$LOG_FILE" "$2"
+        else
+            recent_sort "$LOG_FILE"
+        fi
         exit 0
     else
         usage

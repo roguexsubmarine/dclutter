@@ -21,10 +21,9 @@ options:
         - to be used in directory of images
         - separate directories for jpg(/jpeg)/png/svg/tiff/raw
     
-    -r
-        - to update recent directory
-        - delete the files which are a (1) day old
-        - since they are copies of the files categorized later, it should be fine
+    -r [/days]
+        - segregates into 2 directories one which is X days old and other
+        - default 1 day
 
     -u 
         - Undo last categorization operation
@@ -38,10 +37,16 @@ options:
         - to display options on top
         - display help and usage information
         
-    -d`dump
+    -d
         - dump (revese the declutter)
         - check if any directories and pour their contents in current directory (will need dfs for this one)
         - use ls -R for this (does exactly what is written above)
+
+    -w
+        - replace all whitespace with (_) underscore in file names
+    
+    -x 
+        - clear the log
 
 
    
