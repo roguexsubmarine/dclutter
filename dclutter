@@ -350,6 +350,47 @@ recent_sort() {
 }
 
 
+dump(){
+    local TARGET=$1
+    local CURR_DIR=$2
+    local LOG_FILE=$3
+    local TOTAL=$4
+
+    echo -e "\tdumping $CURR_DIR:"
+
+    local NUM=1
+    for FILE in "$CURR_DIR"/*;
+    do
+        if [[ -d "$FILE" ]];
+        then
+
+            local NEW_TOTAL=$((TOTAL + $(ls -1 "$FILE" | wc -l)))
+            dump "$TARGET" "$FILE" "$LOG_FILE" "$TOTAL"
+            TOTAL=$NEW_TOTAL
+
+        elif [[ -f "$FILE" ]];
+        then
+            #skip if file in target dir
+            if [[ "$FILE" == "$TARGET/$(basename "$FILE")" ]];
+            then
+                continue
+            fi
+
+            mv "$FILE" "$TARGET"
+
+            # Create LOG if not exists
+            touch "$LOG_FILE"
+            echo -e "$TOTAL\t$(basename "$FILE")\t$CURR_DIR\t$TARGET" >> "$LOG_FILE"
+
+            echo -e "$TOTAL)\t$NUM\tdumping: $FILE"
+            ((NUM++))
+            ((TOTAL++))
+        fi
+    done
+
+}
+
+
 
 
 
@@ -382,6 +423,9 @@ else
     then
         clean_log "$LOG_FILE"
         exit 0
+    elif [ "$1" == '-d' ];
+    then
+        dump $(pwd) $(pwd) "$LOG_FILE" 1
     elif [ "$1" == '-r' ];
     then
         remove_whitespace
