@@ -1,6 +1,6 @@
 # dclutter
 
-dclutter is a bash script designed to help manage and organize your cluttered directories with ease. This script offers various options to categorize, clean up, and manage files efficiently.
+`dclutter` is a bash script designed to help manage and organize your cluttered directories with ease. This script offers various options to categorize, clean up, and manage files efficiently.
 
 <p align="center">
 <img src="./gif/dclutter.gif">
@@ -31,11 +31,11 @@ Below are the available options and their descriptions:
 - No option: Segregates files into predefined categories.
 - `-i` : Segregate image files (png, svg, jpg, raw, tiff) into a designated folder.
 - `-r [/days]` : Separate files into two directories—one for files older than the specified number of days and another for newer files.
-- `-d` : Dumps all the files from current directories and subdirectories in current directories.
+- `-d` : Dumps all the files from current directories and subdirectories in current directory.
 - `-u` : (Undo) Revert the last performed action.
 - `-c` : Remove empty directories.
 - `-w` : Renames the files to replace whitespaces with an underscore '_'
-- `-x` : Cleans the log files stores for purposes of undo operations
+- `-x` : Cleans the log file stored for purposes of undo operations.
 - `-h` : Display help information and usage instructions.
 
 ### Example
