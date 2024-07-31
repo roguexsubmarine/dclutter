@@ -58,7 +58,7 @@ to_dos :
         - cuz later other items will be moved to their categories
 
 
-fun things
+learnings
     - file --extension <file>   :   spits out extensions for most
     - file -b <file>            :   keeps is brief (without name prefix)
 
